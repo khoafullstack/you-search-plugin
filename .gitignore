@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Lock files (keep pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE / Editor
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime / caches
+.cache/
+.parcel-cache/
+*.pid
+*.seed
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Pi / Agent internals
+.pi/
+.pi-lens/
+.agents/
+skills-lock.json
+
+# Misc
+*.tgz
+*.tmp
+*.temp

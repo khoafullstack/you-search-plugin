@@ -1,0 +1,9 @@
+packages:
+  - "shared"
+  - "opencode-plugin"
+  - "pi-extension"
+allowBuilds:
+  "@google/genai": true
+  koffi: true
+  msgpackr-extract: true
+  protobufjs: true
