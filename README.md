@@ -6,10 +6,10 @@ This project provides two tools — **`web_you_search`** and **`web_you_fetch`**
 
 ## 🛠️ Tools
 
-| Tool | Description |
-|------|-------------|
+| Tool                 | Description                                                     |
+| -------------------- | --------------------------------------------------------------- |
 | **`web_you_search`** | Search the web via You.com. Returns titles, URLs, and snippets. |
-| **`web_you_fetch`** | Fetch full content from URLs via You.com Contents API. |
+| **`web_you_fetch`**  | Fetch full content from URLs via You.com Contents API.          |
 
 ### Example Usage
 
@@ -20,11 +20,11 @@ This project provides two tools — **`web_you_search`** and **`web_you_fetch`**
 
 ## 📦 Packages
 
-| Package | Description |
-|---------|-------------|
-| `@you-search/shared` | Core logic shared between plugins |
+| Package                       | Description                                |
+| ----------------------------- | ------------------------------------------ |
+| `@you-search/shared`          | Core logic shared between plugins          |
 | `@you-search/opencode-plugin` | Plugin for [OpenCode](https://opencode.ai) |
-| `@you-search/pi-extension` | Extension for [Pi](https://pi.dev) |
+| `@you-search/pi-extension`    | Extension for [Pi](https://pi.dev)         |
 
 ## ⚡ Quick Start
 
