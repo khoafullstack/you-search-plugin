@@ -1,322 +1,201 @@
-# Plan: Setup pnpm Workspaces + Install Packages
+# Plan: Setup Release Pipeline cho You Search Plugin
 
 ## Context
 
-Project `you-search-plugin` muốn tạo 2 tools (`web_you_fetch`, `web_you_search`) dùng You.com Platform:
+Dự án `you-search-plugin` là monorepo với 3 packages (pnpm workspaces):
 
-- **OpenCode**: dùng **Skill** (markdown-based, `SKILL.md`)
-- **Pi**: dùng **Extension** (TypeScript module, `registerTool()`)
-- **shared/**: workspace chung chứa core logic
+- `@you-search/shared` (v0.0.1) — core logic chung
+- `@you-search/opencode-plugin` (v0.0.1) — plugin cho OpenCode
+- `@you-search/pi-extension` (v0.0.1) — extension cho Pi
 
-Hiện tại: 3 thư mục trống (`opencode-plugin/`, `pi-extension/`, `shared/`), chưa có `pnpm-workspace.yaml`, chưa có sub-`package.json`.
+Hiện tại chưa có CI/CD, chưa có release process. Cần setup:
+
+1. **Changesets** — tự động quản lý version + changelog
+2. **GitHub Actions** — CI/CD tự động build + release
+3. **Tạo release v0.0.1** — release đầu tiên
 
 ---
 
 ## Approach
 
-### Bước 1: Tạo `pnpm-workspace.yaml`
+### Bước 1: Setup Changesets
 
-```yaml
-packages:
-  - "shared"
-  - "opencode-plugin"
-  - "pi-extension"
-```
+Changesets là tool chuẩn cho monorepo versioning.它 sẽ:
 
-### Bước 2: Setup workspace `shared/`
+- Theo dõi changes qua `.changeset/*.md` files
+- Tự động bump version đúng cách
+- Generate CHANGELOG.md
 
-**Package name**: `@you-search/shared`
+**Files cần tạo/sửa:**
 
-**package.json**:
+- `.changeset/config.json` — config changesets
+- `package.json` — thêm scripts cho changesets
 
-```json
-{
-  "name": "@you-search/shared",
-  "version": "0.0.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
-  }
-}
-```
+### Bước 2: Setup GitHub Actions CI/CD
 
-**Dependencies** (core logic cho You.com API):
+Tạo 2 workflows:
 
-- `node-fetch` — HTTP client (hoặc dùng native `fetch` vì Node 18+)
-- `zod` — Schema validation cho API requests/responses
+1. **CI** (`ci.yml`) — build & test khi push/PR
+2. **Release** (`release.yml`) — tự động release khi merge to main
 
-**Dev dependencies**:
+**Files cần tạo:**
 
-- `typescript` — Compiler
-- `@types/node` — Node.js types
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
 
-### Bước 3: Setup workspace `pi-extension/`
+### Bước 3: Tạo Release v0.0.1
 
-**Package name**: `@you-search/pi-extension`
+Sau khi setup xong, tạo release đầu tiên:
 
-**package.json**:
-
-```json
-{
-  "name": "@you-search/pi-extension",
-  "version": "0.0.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
-  }
-}
-```
-
-**Dependencies**:
-
-- `@earendil-works/pi-coding-agent` — Extension types (`ExtensionAPI`, `ExtensionContext`)
-- `typebox` — Schema definitions cho tool parameters
-- `@you-search/shared` — Workspace dependency (core logic)
-
-**Dev dependencies**:
-
-- `typescript`
-- `@types/node`
-
-### Bước 4: Setup workspace `opencode-plugin/`
-
-**Package name**: `@you-search/opencode-plugin`
-
-OpenCode plugins là **JS/TypeScript modules** hook vào 25+ events (tool, file, permission, session, TUI...). Plugin export async function nhận context và return event handler. Đặt trong `.opencode/plugin/` (project) hoặc `~/.config/opencode/plugin/` (global).
-
-**package.json**:
-
-```json
-{
-  "name": "@you-search/opencode-plugin",
-  "version": "0.0.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
-  }
-}
-```
-
-**Dependencies**:
-
-- `@you-search/shared` — Workspace dependency (core You.com API logic)
-
-**Dev dependencies**:
-
-- `typescript`
-- `@types/node`
-
-**Cấu trúc thư mục**:
-
-```
-opencode-plugin/
-├── package.json
-├── tsconfig.json
-├── .opencode/
-│   ├── plugin/                    # Plugin JS/TS modules
-│   │   ├── web-you-fetch.js       # Built output hoặc source
-│   │   └── web-you-search.js
-│   └── skills/                    # SKILL.md (optional, cho discoverability)
-│       ├── web-you-fetch/
-│       │   └── SKILL.md
-│       └── web-you-search/
-│           └── SKILL.md
-└── src/
-    ├── web-you-fetch.ts           # Plugin: hook events + registerTool()
-    ├── web-you-search.ts          # Plugin: hook events + registerTool()
-    └── index.ts                   # Export all plugins
-```
-
-**Plugin pattern** (theo skill `creating-opencode-plugins`):
-
-```typescript
-// src/web-you-fetch.ts
-import { youFetch } from "@you-search/shared";
-
-export const WebYouFetchPlugin = async ({ project, client }) => {
-  // Register custom tool
-  await client.registerTool({
-    name: "web_you_fetch",
-    description: "Fetch content from You.com",
-    parameters: {
-      /* schema */
-    },
-    handler: async (params) => {
-      /* ... */
-    },
-  });
-
-  return {
-    event: async ({ event }) => {
-      // Hook into tool.execute.before/after, file.edited, etc.
-    },
-  };
-};
-```
-
-### Bước 5: Root TypeScript Config
-
-Tạo `tsconfig.json` ở root làm base config:
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
-  },
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-Mỗi workspace sẽ có `tsconfig.json` riêng extend từ root:
-
-```json
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"]
-}
-```
-
-### Bước 6: Install Từng Workspace
-
-Thực hiện theo thứ tự (workspace trước, rồi dependents):
-
-**Round 1 — shared/**:
-
-```bash
-pnpm --filter @you-search/shared add zod
-pnpm --filter @you-search/shared add -D typescript @types/node
-```
-
-**Round 2 — pi-extension/**:
-
-```bash
-pnpm --filter @you-search/pi-extension add @you-search/shared
-pnpm --filter @you-search/pi-extension add @earendil-works/pi-coding-agent typebox
-pnpm --filter @you-search/pi-extension add -D typescript @types/node
-```
-
-**Round 3 — opencode-plugin/**:
-
-```bash
-pnpm --filter @you-search/opencode-plugin add @you-search/shared
-pnpm --filter @you-search/opencode-plugin add -D typescript @types/node
-```
-
-**Hoặc install all từ root** (sau khi workspace đã được define):
-
-```bash
-pnpm install
-```
+- Tạo git tag `v0.0.1`
+- Tạo GitHub Release với release notes
 
 ---
 
 ## Files to Modify/Create
 
-| File                                                       | Action                                           |
-| ---------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm-workspace.yaml`                                      | **Create** — Workspace config                    |
-| `tsconfig.json` (root)                                     | **Create** — Base TypeScript config              |
-| `shared/package.json`                                      | **Create** — Shared workspace package            |
-| `shared/tsconfig.json`                                     | **Create** — Shared TS config                    |
-| `shared/src/index.ts`                                      | **Create** — Entry point (placeholder)           |
-| `pi-extension/package.json`                                | **Create** — Pi extension package                |
-| `pi-extension/tsconfig.json`                               | **Create** — Pi TS config                        |
-| `pi-extension/src/index.ts`                                | **Create** — Extension entry (placeholder)       |
-| `opencode-plugin/package.json`                             | **Create** — OpenCode skill package              |
-| `opencode-plugin/tsconfig.json`                            | **Create** — OpenCode TS config                  |
-| `opencode-plugin/src/web-you-fetch.ts`                     | **Create** — Plugin module (hook + registerTool) |
-| `opencode-plugin/src/web-you-search.ts`                    | **Create** — Plugin module (hook + registerTool) |
-| `opencode-plugin/src/index.ts`                             | **Create** — Export all plugins                  |
-| `opencode-plugin/.opencode/skills/web-you-fetch/SKILL.md`  | **Create** — Skill definition (discoverability)  |
-| `opencode-plugin/.opencode/skills/web-you-search/SKILL.md` | **Create** — Skill definition (discoverability)  |
+| File                            | Action | Mô tả                                           |
+| ------------------------------- | ------ | ----------------------------------------------- |
+| `.changeset/config.json`        | CREATE | Config changesets cho monorepo                  |
+| `package.json`                  | EDIT   | Thêm scripts: `changeset`, `version`, `release` |
+| `.github/workflows/ci.yml`      | CREATE | CI workflow: build khi push                     |
+| `.github/workflows/release.yml` | CREATE | Release workflow: auto release khi merge        |
+
+---
+
+## Reuse Existing Code
+
+- `pnpm-workspace.yaml` — đã có cấu hình packages, reuse
+- `package.json` scripts — thêm vào existing scripts
+- Git tags — dùng git tag truyền thống + gh CLI
+
+---
+
+## Steps
+
+### Step 1: Install Changesets
+
+```bash
+pnpm add -Dw @changesets/cli
+```
+
+### Step 2: Init Changesets
+
+```bash
+pnpm changeset init
+```
+
+→ Tạo `.changeset/config.json`
+
+### Step 3: Edit .changeset/config.json
+
+Config cho monorepo:
+
+```json
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [],
+  "linked": [["@you-search/opencode-plugin", "@you-search/pi-extension"]],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}
+```
+
+### Step 4: Add scripts to root package.json
+
+```json
+{
+  "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
+    "build": "pnpm -r build"
+  }
+}
+```
+
+### Step 5: Create GitHub Actions CI Workflow
+
+`.github/workflows/ci.yml`:
+
+- Trigger: push to main, PR to main
+- Jobs: install → build → (optional: test)
+
+### Step 6: Create GitHub Actions Release Workflow
+
+`.github/workflows/release.yml`:
+
+- Trigger: push to main
+- Jobs: install → build → changeset version → git push (version bump)
+- Không publish npm (packages giữ `private: true`)
+
+### Step 7: Create Release v0.0.1
+
+```bash
+# Tạo tag
+git tag v0.0.1
+git push origin v0.0.1
+
+# Tạo release với gh CLI
+gh release create v0.0.1 \
+  --title "v0.0.1 - Initial Release" \
+  --notes "## You Search Plugin v0.0.1
+
+### 🚀 Features
+- OpenCode plugin for web search
+- Pi extension for web search
+- Shared core logic"
+
+# Commit & Push
+git add .
+git commit -m "chore: setup changesets and CI/CD"
+git push origin main
+```
 
 ---
 
 ## Verification
 
-1. **Check workspace resolution**:
+1. **Changesets**:
 
    ```bash
-   pnpm ls --depth 0 -r
+   pnpm changeset  # Should show changeset wizard
    ```
 
-   Phải thấy 3 workspaces: `@you-search/shared`, `@you-search/pi-extension`, `@you-search/opencode-plugin`
-
-2. **Check TypeScript compilation**:
+2. **CI Workflow**:
 
    ```bash
-   pnpm -r run build
+   gh workflow list  # Should show ci.yml
    ```
 
-   Không có lỗi compile
-
-3. **Check dependency linking**:
+3. **Release Workflow**:
 
    ```bash
-   pnpm ls -r
+   gh workflow list  # Should show release.yml
    ```
 
-   `@you-search/shared` phải xuất hiện trong dependencies của cả 2 workspace kia
-
-4. **Check Pi extension loadable**:
-
+4. **Release v0.0.1**:
    ```bash
-   cd pi-extension && pi -e ./src/index.ts
-   ```
-
-5. **Check OpenCode plugin loadable**:
-   ```bash
-   cd opencode-plugin && pnpm build
-   # Kiểm tra dist/ có output
-   # Copy plugin to .opencode/plugin/ và chạy opencode
+   gh release list  # Should show v0.0.1
    ```
 
 ---
 
-## Notes
+## Note: Không publish npm
 
-- Root `package.json` hiện tại đã có `"type": "module"` — giữ nguyên
-- Root `package.json` cần thêm `"private": true` để tránh publish nhầm
-- OpenCode plugins là JS/TypeScript modules hook vào events, đặt trong `.opencode/plugin/`
-- SKILL.md song song với plugin giúp agent discover skill name + description
-- Pi extension import từ `@earendil-works/pi-coding-agent` cần cài khi dev
-- `zod` trong shared dùng để validate You.com API responses
-- Tham khảo skill `.agents/skills/creating-opencode-plugins/SKILL.md` cho plugin API details
+Các packages giữ nguyên `"private": true`, chỉ tạo GitHub Release với source code.
+
+---
+
+## Summary
+
+Sau khi hoàn thành:
+
+- ✅ Changesets quản lý version + changelog tự động
+- ✅ CI chạy build khi có PR/push
+- ✅ Release workflow tự động bump version khi merge to main
+- ✅ Release v0.0.1 đầu tiên trên GitHub (không publish npm)

@@ -5,6 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
+    "build": "pnpm -r build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -17,5 +21,8 @@
       "onFail": "download"
     }
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0"
+  }
 }
