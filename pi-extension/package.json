@@ -1,7 +1,9 @@
 {
-  "name": "@you-search/pi-extension",
+  "name": "@anhkhoa2109/pi-you-search",
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "description": "Pi extension for web_you_search and web_you_fetch tools powered by You.com",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,17 +12,34 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "^0.74.0",
-    "@you-search/shared": "workspace:*",
     "typebox": "^1.1.38"
   },
   "devDependencies": {
     "@types/node": "^25.6.2",
+    "@you-search/shared": "workspace:*",
+    "tsup": "^8.5.1",
     "typescript": "^6.0.3"
+  },
+  "keywords": [
+    "pi",
+    "extension",
+    "you.com",
+    "web-search",
+    "web-fetch"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anhkhoa2109/you-search-plugin",
+    "directory": "pi-extension"
   }
 }

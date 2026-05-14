@@ -4,6 +4,7 @@ packages:
   - "pi-extension"
 allowBuilds:
   "@google/genai": true
+  esbuild: true
   koffi: true
   msgpackr-extract: true
   protobufjs: true
